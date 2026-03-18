@@ -7,11 +7,16 @@ import { TruistError } from '../errors/TruistError';
 
 /**
  * ABA routing transit number — exactly 9 numeric digits.
+ * Also validates the ABA checksum: 3(d1+d4+d7) + 7(d2+d5+d8) + (d3+d6+d9) ≡ 0 mod 10.
  * Error code 8005 is returned by Truist for invalid routing numbers.
  */
 const RoutingNumberSchema = z
     .string()
-    .regex(/^\d{9}$/, 'Routing number must be exactly 9 digits (ABA format).');
+    .regex(/^\d{9}$/, 'Routing number must be exactly 9 digits (ABA format).')
+    .refine((val) => {
+        const d = val.split('').map(Number);
+        return (3 * (d[0] + d[3] + d[6]) + 7 * (d[1] + d[4] + d[7]) + (d[2] + d[5] + d[8])) % 10 === 0;
+    }, 'Routing number fails ABA checksum validation. Ensure it is a valid ABA routing transit number.');
 
 /**
  * Bank account number — 1 to 17 numeric digits.
@@ -62,7 +67,7 @@ const StateCodeSchema = z
 // ---------------------------------------------------------------------------
 
 const VerifyAccountItemSchema = z.object({
-    id: z.number().int().nonnegative(),
+    id: z.coerce.number().int().nonnegative(),
     accountNumber: AccountNumberSchema,
     routingNumber: RoutingNumberSchema
 }).strict();
@@ -91,8 +96,8 @@ const OwnerProfileSchema = z.object({
     ssnTIN: SsnTinSchema,
     homePhoneNumber: PhoneNumberSchema,
     workPhoneNumber: PhoneNumberSchema,
-    /** ISO-8601 date (YYYY-MM-DD). */
-    dateOfBirth: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, 'dateOfBirth must be in YYYY-MM-DD format.'),
+    /** ISO-8601 date (YYYY-MM-DD). Optional. */
+    dateOfBirth: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, 'dateOfBirth must be in YYYY-MM-DD format.').optional(),
     documentId: z.string().optional(),
     documentIdState: StateCodeSchema.optional(),
     documentIdType: z.string().optional(),
@@ -111,7 +116,7 @@ const OwnerProfileSchema = z.object({
 });
 
 const VerifyAccountOwnerItemSchema = z.object({
-    id: z.number().int().nonnegative(),
+    id: z.coerce.number().int().nonnegative(),
     accountNumber: AccountNumberSchema,
     routingNumber: RoutingNumberSchema,
     profile: OwnerProfileSchema

@@ -101,8 +101,8 @@ export interface VerifyOwnerProfile {
     ssnTIN: string;
     homePhoneNumber: string;
     workPhoneNumber: string;
-    /** ISO-8601 date of birth (YYYY-MM-DD). */
-    dateOfBirth: string;
+    /** ISO-8601 date of birth (YYYY-MM-DD). Optional. */
+    dateOfBirth?: string;
     /**
      * Document fields must all be supplied together or all omitted.
      * Per Truist API Playbook §5.2.

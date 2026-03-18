@@ -5,7 +5,7 @@ export async function encryptPayloadAsJwe(payload: unknown, jwk: JWK): Promise<s
     const plaintext = new TextEncoder().encode(JSON.stringify(payload));
     const protectedHeader: CompactJWEHeaderParameters = {
         alg: 'RSA-OAEP-256',
-        enc: 'A256GCM',
+        enc: 'A128CBC-HS256',
         ...(jwk.kid ? { kid: jwk.kid } : {})
     };
 
