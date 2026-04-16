@@ -1,13 +1,13 @@
-import { z, type RefinementCtx } from 'zod';
+﻿import { z, type RefinementCtx } from 'zod';
 import { TruistError } from '../errors/TruistError';
 
 // ---------------------------------------------------------------------------
-// Reusable field validators matching Truist API data dictionary (Appendix §8)
+// Reusable field validators matching Truist API data dictionary (Appendix Â§8)
 // ---------------------------------------------------------------------------
 
 /**
- * ABA routing transit number — exactly 9 numeric digits.
- * Also validates the ABA checksum: 3(d1+d4+d7) + 7(d2+d5+d8) + (d3+d6+d9) ≡ 0 mod 10.
+ * ABA routing transit number â€” exactly 9 numeric digits.
+ * Also validates the ABA checksum: 3(d1+d4+d7) + 7(d2+d5+d8) + (d3+d6+d9) â‰¡ 0 mod 10.
  * Error code 8005 is returned by Truist for invalid routing numbers.
  */
 const RoutingNumberSchema = z
@@ -19,7 +19,7 @@ const RoutingNumberSchema = z
     }, 'Routing number fails ABA checksum validation. Ensure it is a valid ABA routing transit number.');
 
 /**
- * Bank account number — 1 to 17 numeric digits.
+ * Bank account number â€” 1 to 17 numeric digits.
  * Error code 8004 is returned by Truist for invalid account numbers.
  */
 const AccountNumberSchema = z
@@ -29,15 +29,15 @@ const AccountNumberSchema = z
     .regex(/^\d+$/, 'Account number must contain only numeric digits.');
 
 /**
- * SSN/TIN — accepts ###-##-#### or ########## formats.
+ * SSN/TIN â€” accepts ###-##-#### or ########## formats.
  * Error code 8010 is returned by Truist for invalid SSN/TIN values.
  */
 const SsnTinSchema = z
     .string()
-    .regex(/^\d{3}-?\d{2}-?\d{4}$|^\d{9,10}$/, 'ssnTIN must be a valid SSN (###-##-####) or TIN (9–10 digits).');
+    .regex(/^\d{3}-?\d{2}-?\d{4}$|^\d{9,10}$/, 'ssnTIN must be a valid SSN (###-##-####) or TIN (9â€“10 digits).');
 
 /**
- * Phone number — accepts E.164 format (+1XXXXXXXXXX) or plain 10-digit (XXXXXXXXXX).
+ * Phone number â€” accepts E.164 format (+1XXXXXXXXXX) or plain 10-digit (XXXXXXXXXX).
  * Truist test data uses plain 10-digit numbers; E.164 is also accepted.
  * Error code 8011 is returned by Truist for invalid phone numbers.
  */
@@ -45,8 +45,19 @@ const PhoneNumberSchema = z
     .string()
     .regex(/^\+[1-9]\d{7,14}$|^\d{10}$/, 'Phone number must be 10 digits or E.164 format (e.g. +19493489740).');
 
+const OptionalPhoneNumberSchema = z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => {
+        if (value === null || value === undefined) {
+            return undefined;
+        }
+        const normalized = value.trim();
+        return normalized === '' ? undefined : normalized;
+    })
+    .pipe(PhoneNumberSchema.optional());
+
 /**
- * US ZIP code — 5 digits or ZIP+4 (XXXXX-XXXX).
+ * US ZIP code â€” 5 digits or ZIP+4 (XXXXX-XXXX).
  * Error code 8016 is returned by Truist for invalid zip codes.
  */
 const ZipCodeSchema = z
@@ -98,8 +109,8 @@ const OwnerProfileSchema = z.object({
     middleName: z.string().optional(),
     businessName: z.string().optional(),
     ssnTIN: SsnTinSchema,
-    homePhoneNumber: PhoneNumberSchema,
-    workPhoneNumber: PhoneNumberSchema,
+    homePhoneNumber: OptionalPhoneNumberSchema,
+    workPhoneNumber: OptionalPhoneNumberSchema,
     /** ISO-8601 date (YYYY-MM-DD). Optional. */
     dateOfBirth: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, 'dateOfBirth must be in YYYY-MM-DD format.').optional(),
     documentId: z.string().optional(),
@@ -108,7 +119,7 @@ const OwnerProfileSchema = z.object({
     address: AddressSchema.optional()
 }).strict().superRefine((value: unknown, ctx: RefinementCtx) => {
     const profile = value as Record<string, unknown>;
-    // All three document fields must be supplied together or all omitted (§5.2 note)
+    // All three document fields must be supplied together or all omitted (Â§5.2 note)
     const docValues = [profile.documentId, profile.documentIdState, profile.documentIdType];
     const presentCount = docValues.filter(Boolean).length;
     if (presentCount > 0 && presentCount < 3) {
@@ -149,3 +160,7 @@ export function parseOrThrow<T>(schema: z.ZodSchema<T>, payload: unknown, messag
 
     throw new TruistError(`${message} ${details.join('; ')}`, 400, 'SDK_VALIDATION_ERROR');
 }
+
+
+
+

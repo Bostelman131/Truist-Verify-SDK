@@ -99,8 +99,8 @@ export interface VerifyOwnerProfile {
     businessName?: string;
     /** Social Security Number or Tax Identification Number. */
     ssnTIN: string;
-    homePhoneNumber: string;
-    workPhoneNumber: string;
+    homePhoneNumber?: string;
+    workPhoneNumber?: string;
     /** ISO-8601 date of birth (YYYY-MM-DD). Optional. */
     dateOfBirth?: string;
     /**
