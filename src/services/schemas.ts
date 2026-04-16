@@ -62,6 +62,10 @@ const StateCodeSchema = z
     .length(2, 'State must be a 2-letter US state abbreviation.')
     .toUpperCase();
 
+function replaceNonLettersWithSpaces(value: string): string {
+    return value.replace(/[^\p{L}]/gu, ' ');
+}
+
 // ---------------------------------------------------------------------------
 // Account Verification
 // ---------------------------------------------------------------------------
@@ -89,8 +93,8 @@ const AddressSchema = z.object({
 }).strict();
 
 const OwnerProfileSchema = z.object({
-    firstName: z.string().min(1, 'firstName is required.'),
-    lastName: z.string().min(1, 'lastName is required.'),
+    firstName: z.string().min(1, 'firstName is required.').transform(replaceNonLettersWithSpaces),
+    lastName: z.string().min(1, 'lastName is required.').transform(replaceNonLettersWithSpaces),
     middleName: z.string().optional(),
     businessName: z.string().optional(),
     ssnTIN: SsnTinSchema,
