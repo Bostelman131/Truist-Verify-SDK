@@ -37,13 +37,31 @@ const SsnTinSchema = z
     .regex(/^\d{3}-?\d{2}-?\d{4}$|^\d{9,10}$/, 'ssnTIN must be a valid SSN (###-##-####) or TIN (9â€“10 digits).');
 
 /**
- * Phone number â€” accepts E.164 format (+1XXXXXXXXXX) or plain 10-digit (XXXXXXXXXX).
- * Truist test data uses plain 10-digit numbers; E.164 is also accepted.
+ * Phone number â€” accepts:
+ *   - plain 10-digit US numbers (XXXXXXXXXX)
+ *   - US numbers with a country code, with or without '+' (1XXXXXXXXXX or +1XXXXXXXXXX)
+ *   - general E.164 format (+[country][number])
+ * Truist test data uses plain 10-digit numbers; the SDK normalizes any of the
+ * accepted formats to E.164 (+1XXXXXXXXXX for US numbers) before validation.
  * Error code 8011 is returned by Truist for invalid phone numbers.
  */
 const PhoneNumberSchema = z
     .string()
-    .regex(/^\+[1-9]\d{7,14}$|^\d{10}$/, 'Phone number must be 10 digits or E.164 format (e.g. +19493489740).');
+    .transform((value) => {
+        const trimmed = value.trim();
+        // Normalize US numbers to E.164 (+1XXXXXXXXXX).
+        if (/^\d{10}$/.test(trimmed)) {
+            return `+1${trimmed}`;
+        }
+        if (/^1\d{10}$/.test(trimmed)) {
+            return `+${trimmed}`;
+        }
+        return trimmed;
+    })
+    .refine(
+        (value) => /^\+1\d{10}$/.test(value) || /^\+[1-9]\d{7,14}$/.test(value),
+        'Phone number must be 10 digits or E.164 format (e.g. 9493489740, +19493489740).'
+    );
 
 const OptionalPhoneNumberSchema = z
     .union([z.string(), z.null(), z.undefined()])
@@ -65,13 +83,10 @@ const ZipCodeSchema = z
     .regex(/^\d{5}(-\d{4})?$/, 'zipCode must be a 5-digit or ZIP+4 (XXXXX-XXXX) postal code.');
 
 /**
- * 2-letter US state abbreviation.
- * Error codes 8015 / 8019 are returned by Truist for invalid state codes.
+ * US state â€” pass-through. Whatever value is assigned is accepted as-is,
+ * with no abbreviation/full-name validation or normalization.
  */
-const StateCodeSchema = z
-    .string()
-    .length(2, 'State must be a 2-letter US state abbreviation.')
-    .toUpperCase();
+const StateCodeSchema = z.string();
 
 function replaceNonLettersWithSpaces(value: string): string {
     return value.replace(/[^\p{L}]/gu, ' ');
