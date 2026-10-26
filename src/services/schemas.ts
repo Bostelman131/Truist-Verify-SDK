@@ -161,7 +161,7 @@ export const VerifyAccountOwnersRequestSchema = z.object({
 // Utility
 // ---------------------------------------------------------------------------
 
-export function parseOrThrow<T>(schema: z.ZodSchema<T>, payload: unknown, message: string): T {
+export function parseOrThrow<Output>(schema: z.ZodType<Output, z.ZodTypeDef, unknown>, payload: unknown, message: string): Output {
     const result = schema.safeParse(payload);
 
     if (result.success) {
